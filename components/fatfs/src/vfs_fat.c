@@ -24,6 +24,19 @@
 #include "ff.h"
 #include "diskio.h"
 
+#define MY_MEM_SPI
+
+#ifndef MY_MEM_SPI
+    #define MY_MEM_CALLOC(a,b) (a*) calloc(1, b)
+    #define MY_MEM_MALLOC(a,b) (a*) malloc(b)
+    #define MY_MEM_FREE(a) free(a)
+#else
+    // MALLOC_CAP_DEFAULT, MALLOC_CAP_SPIRAM , MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT 
+    #define MY_MEM_CALLOC(a,b) (a*) heap_caps_calloc(1, b, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT)
+    #define MY_MEM_MALLOC(a,b) (a*) heap_caps_malloc(b, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT)
+    #define MY_MEM_FREE(a) heap_caps_free(a)
+#endif
+
 typedef struct {
     char fat_drive[8];  /* FAT drive name */
     char base_path[ESP_VFS_PATH_MAX];   /* base path in VFS where partition is registered */
@@ -148,13 +161,17 @@ esp_err_t esp_vfs_fat_register(const char* base_path, const char* fat_drive, siz
         .truncate_p = &vfs_fat_truncate,
     };
     size_t ctx_size = sizeof(vfs_fat_ctx_t) + max_files * sizeof(FIL);
-    vfs_fat_ctx_t* fat_ctx = (vfs_fat_ctx_t*) calloc(1, ctx_size);
+    // vfs_fat_ctx_t* fat_ctx = (vfs_fat_ctx_t*) calloc(1, ctx_size);
+    printf("SIZE #1: %u\n", ctx_size);
+    vfs_fat_ctx_t* fat_ctx = MY_MEM_CALLOC(vfs_fat_ctx_t, ctx_size);
     if (fat_ctx == NULL) {
         return ESP_ERR_NO_MEM;
     }
-    fat_ctx->o_append = malloc(max_files * sizeof(bool));
+    // fat_ctx->o_append = malloc(max_files * sizeof(bool));
+    printf("SIZE #2: %u\n",  max_files * sizeof(bool));
+    fat_ctx->o_append = MY_MEM_MALLOC(bool, max_files * sizeof(bool));
     if (fat_ctx->o_append == NULL) {
-        free(fat_ctx);
+        MY_MEM_FREE(fat_ctx);
         return ESP_ERR_NO_MEM;
     }
     fat_ctx->max_files = max_files;
@@ -163,8 +180,8 @@ esp_err_t esp_vfs_fat_register(const char* base_path, const char* fat_drive, siz
 
     esp_err_t err = esp_vfs_register(base_path, &vfs, fat_ctx);
     if (err != ESP_OK) {
-        free(fat_ctx->o_append);
-        free(fat_ctx);
+        MY_MEM_FREE(fat_ctx->o_append);
+        MY_MEM_FREE(fat_ctx);
         return err;
     }
 
@@ -191,8 +208,8 @@ esp_err_t esp_vfs_fat_unregister_path(const char* base_path)
         return err;
     }
     _lock_close(&fat_ctx->lock);
-    free(fat_ctx->o_append);
-    free(fat_ctx);
+    MY_MEM_FREE(fat_ctx->o_append);
+    MY_MEM_FREE(fat_ctx);
     s_fat_ctxs[ctx] = NULL;
     return ESP_OK;
 }

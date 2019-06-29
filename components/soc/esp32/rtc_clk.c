@@ -476,6 +476,7 @@ static void rtc_clk_cpu_freq_to_pll_mhz(int cpu_freq_mhz)
 void rtc_clk_cpu_freq_set(rtc_cpu_freq_t cpu_freq)
 {
     rtc_cpu_freq_config_t config;
+    config.source_freq_mhz = 80;
     rtc_clk_cpu_freq_to_config(cpu_freq, &config);
     rtc_clk_cpu_freq_set_config(&config);
 }
@@ -483,6 +484,7 @@ void rtc_clk_cpu_freq_set(rtc_cpu_freq_t cpu_freq)
 void rtc_clk_cpu_freq_set_fast(rtc_cpu_freq_t cpu_freq)
 {
     rtc_cpu_freq_config_t config;
+    config.source_freq_mhz = 80;
     rtc_clk_cpu_freq_to_config(cpu_freq, &config);
     rtc_clk_cpu_freq_set_config_fast(&config);
 }
@@ -500,7 +502,7 @@ rtc_cpu_freq_t rtc_clk_cpu_freq_get()
 {
     rtc_cpu_freq_config_t config;
     rtc_clk_cpu_freq_get_config(&config);
-    rtc_cpu_freq_t freq;
+    rtc_cpu_freq_t freq = 80;
     rtc_clk_cpu_freq_from_mhz_internal(config.freq_mhz, &freq);
     return freq;
 }
@@ -549,7 +551,7 @@ bool rtc_clk_cpu_freq_from_mhz(int mhz, rtc_cpu_freq_t* out_val)
 
 void rtc_clk_cpu_freq_to_config(rtc_cpu_freq_t cpu_freq, rtc_cpu_freq_config_t* out_config)
 {
-    uint32_t source_freq_mhz;
+    uint32_t source_freq_mhz = 80;
     rtc_cpu_freq_src_t source;
     uint32_t freq_mhz;
     uint32_t divider;
